@@ -1,23 +1,29 @@
-import React from 'react';
-import { Leaf } from 'lucide-react';
-import TeamLogo from '../assets/TeamLogo.svg'
+// src/otherComponents/navBar.jsx
+import { Leaf } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 function NavBar() {
   return (
-    <nav className="sticky top-0 z-10 bg-white border-b border-gray-100">
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-            <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600">
-                <Leaf className="w-5 h-5" />
-                </div>
-                <span className="text-lg font-bold text-gray-900 leading-tight">
-                    WASTELESS
-                </span>
-            </div>
-            <div className="flex text-lg font-bold self-center">
-                TEAM Zero0ne 
-            </div>
+    <nav className="sticky top-0 z-10 w-full border-b bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60">
+      <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 ring-1 ring-emerald-200">
+            <Leaf className="h-5 w-5 text-emerald-600" />
+          </div>
+          <span className="text-lg font-bold tracking-tight text-gray-900">
+            WASTELESS
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Separator orientation="vertical" className="h-5 hidden sm:block" />
+          <Badge
+            variant="outline"
+            className="border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-700"
+          >
+            TEAM Zero0ne
+          </Badge>
         </div>
       </div>
     </nav>
