@@ -28,7 +28,6 @@ function Home() {
 
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link to="/predict"
-            href="/predict"
             className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white")}
           >
             <BarChart3 className="w-4 h-4" />
