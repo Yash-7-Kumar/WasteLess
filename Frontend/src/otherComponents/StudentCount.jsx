@@ -10,10 +10,10 @@ import {
   UtensilsCrossed,
   Cookie,
   Moon,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Field,
   FieldLabel,
@@ -59,6 +59,15 @@ const formSchema = z.object({
     .max(300, "That seems too high"),
 });
 
+const FoodLoader = () => (
+  <div className="flex flex-col items-center justify-center gap-4 py-12">
+    <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
+    <p className="text-base font-medium text-gray-500">
+      Checking today's prediction...
+    </p>
+  </div>
+);
+
 export default function StudentCount() {
   const [predictions, setPredictions] = useState(null);
   const [apiError, setApiError] = useState(null);
@@ -102,9 +111,9 @@ export default function StudentCount() {
   return (
     <div className="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center px-4 py-12">
       {checkingExisting ? (
-        <Card className="w-full max-w-lg shadow-md">
-          <CardContent className="py-16 text-center text-gray-500">
-            Checking today's prediction...
+        <Card className="w-full max-w-lg shadow-md flex items-center justify-center min-h-[350px]">
+          <CardContent className="p-0">
+            <FoodLoader />
           </CardContent>
         </Card>
       ) : predictions ? (
@@ -118,7 +127,7 @@ export default function StudentCount() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 max-sm:grid-cols-1 gap-3">
               {MEAL_TYPES.map(({ key, label, icon: Icon }) => (
                 <div
                   key={key}
