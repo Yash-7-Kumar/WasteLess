@@ -41,22 +41,22 @@ const formSchema = z.object({
     .number({ invalid_type_error: "Enter a valid number" })
     .int("Must be a whole number")
     .min(0, "Can't be negative")
-    .max(300, "That seems too high"),
+    .max(1000, "That seems too high"),
   lunch: z.coerce
     .number({ invalid_type_error: "Enter a valid number" })
     .int("Must be a whole number")
     .min(0, "Can't be negative")
-    .max(300, "That seems too high"),
+    .max(1000, "That seems too high"),
   snack: z.coerce
     .number({ invalid_type_error: "Enter a valid number" })
     .int("Must be a whole number")
     .min(0, "Can't be negative")
-    .max(300, "That seems too high"),
+    .max(1000, "That seems too high"),
   dinner: z.coerce
     .number({ invalid_type_error: "Enter a valid number" })
     .int("Must be a whole number")
     .min(0, "Can't be negative")
-    .max(300, "That seems too high"),
+    .max(1000, "That seems too high"),
 });
 
 const FoodLoader = () => (

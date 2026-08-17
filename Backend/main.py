@@ -23,27 +23,27 @@ async def get_db():
 
 class StudentCountInput(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    breakfast: int = Field(..., ge=0, le=300)
-    lunch: int = Field(..., ge=0, le=300)
-    snack: int = Field(..., ge=0, le=300)
-    dinner: int = Field(..., ge=0, le=300)
+    breakfast: int = Field(..., ge=0, le=1000)
+    lunch: int = Field(..., ge=0, le=1000)
+    snack: int = Field(..., ge=0, le=1000)
+    dinner: int = Field(..., ge=0, le=1000)
     input_at: date = Field(default_factory=date.today)
 
 
 class StudentCountPredict(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     input_id: int = Field(foreign_key="studentcountinput.id")
-    breakfast: int = Field(..., ge=0, le=300)
-    lunch: int = Field(..., ge=0, le=300)
-    snack: int = Field(..., ge=0, le=300)
-    dinner: int = Field(..., ge=0, le=300)
+    breakfast: int = Field(..., ge=0, le=1000)
+    lunch: int = Field(..., ge=0, le=1000)
+    snack: int = Field(..., ge=0, le=1000)
+    dinner: int = Field(..., ge=0, le=1000)
     predicted_at: date = Field(default_factory=date.today)
 
 class HeadcountRequest(SQLModel):
-    breakfast: int = Field(..., ge=0, le=300)
-    lunch: int = Field(..., ge=0, le=300)
-    snack: int = Field(..., ge=0, le=300)
-    dinner: int = Field(..., ge=0, le=300)
+    breakfast: int = Field(..., ge=0, le=1000)
+    lunch: int = Field(..., ge=0, le=1000)
+    snack: int = Field(..., ge=0, le=1000)
+    dinner: int = Field(..., ge=0, le=1000)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
