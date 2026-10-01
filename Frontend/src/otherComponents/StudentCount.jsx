@@ -1,5 +1,6 @@
 // src/otherComponents/StudentCount.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Link, useParams, Navigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +11,8 @@ import {
   UtensilsCrossed,
   Cookie,
   Moon,
-  Loader2
+  Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,78 +31,219 @@ import {
 } from "@/components/ui/card";
 import api from "../urlServices.js";
 
-const MEAL_TYPES = [
-  { key: "breakfast", label: "Breakfast", icon: Coffee },
-  { key: "lunch", label: "Lunch", icon: UtensilsCrossed },
-  { key: "snack", label: "Snack", icon: Cookie },
-  { key: "dinner", label: "Dinner", icon: Moon },
+const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }); 
+
+/* -------------------------------------------------------------------------- */
+/*  Meal config                                                               */
+/* -------------------------------------------------------------------------- */
+
+export const MEAL_TYPES = [
+  { key: "breakfast", label: "Breakfast", icon: Coffee, hint: "Morning meal" },
+  { key: "lunch", label: "Lunch", icon: UtensilsCrossed, hint: "Afternoon meal" },
+  { key: "snack", label: "Snack", icon: Cookie, hint: "Evening snacks" },
+  { key: "dinner", label: "Dinner", icon: Moon, hint: "Night meal" },
 ];
 
-const formSchema = z.object({
-  breakfast: z.coerce
-    .number({ invalid_type_error: "Enter a valid number" })
-    .int("Must be a whole number")
-    .min(0, "Can't be negative")
-    .max(1000, "That seems too high"),
-  lunch: z.coerce
-    .number({ invalid_type_error: "Enter a valid number" })
-    .int("Must be a whole number")
-    .min(0, "Can't be negative")
-    .max(1000, "That seems too high"),
-  snack: z.coerce
-    .number({ invalid_type_error: "Enter a valid number" })
-    .int("Must be a whole number")
-    .min(0, "Can't be negative")
-    .max(1000, "That seems too high"),
-  dinner: z.coerce
-    .number({ invalid_type_error: "Enter a valid number" })
-    .int("Must be a whole number")
-    .min(0, "Can't be negative")
-    .max(1000, "That seems too high"),
-});
+export const getMeal = (key) => MEAL_TYPES.find((m) => m.key === key);
 
-const FoodLoader = () => (
-  <div className="flex flex-col items-center justify-center gap-4 py-12">
-    <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
-    <p className="text-base font-medium text-gray-500">
-      Checking today's prediction...
-    </p>
+const ALL_FIELDS = MEAL_TYPES.map((m) => m.key);
+
+// Edit endpoints / fields here when the backend changes
+const MEAL_CONFIG = {
+  breakfast: { todayEndpoint: "/predict/breakfast/today", predictEndpoint: "/predict/breakfast", fields: ["breakfast"] },
+  lunch:     { todayEndpoint: "/predict/lunch/today",     predictEndpoint: "/predict/lunch",     fields: ["lunch"] },
+  snack:     { todayEndpoint: "/predict/snack/today",     predictEndpoint: "/predict/snack",     fields: ["snack"] },
+  dinner:    { todayEndpoint: "/predict/dinner/today",    predictEndpoint: "/predict/dinner",    fields: ["dinner"] },
+};  
+
+/* -------------------------------------------------------------------------- */
+/*  Validation                                                                */
+/* -------------------------------------------------------------------------- */
+
+const countField = z
+  .string()
+  .trim()
+  .min(1, "This field is required")
+  .transform((val) => Number(val))
+  .pipe(
+    z
+      .number({ invalid_type_error: "Enter a valid number" })
+      .int("Must be a whole number")
+      .min(10, "Can't be less than 10")
+      .max(12000, "That seems too high"),
+  );
+
+/* -------------------------------------------------------------------------- */
+/*  Shared UI pieces                                                          */
+/* -------------------------------------------------------------------------- */
+
+const PageShell = ({ children }) => (
+  <div className="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center px-4 py-12">
+    {children}
   </div>
 );
 
-export default function StudentCount() {
-  const [predictions, setPredictions] = useState(null);
-  const [apiError, setApiError] = useState(null);
-  const [checkingExisting, setCheckingExisting] = useState(true);
+const BackButton = () => (
+  <Link
+    to="/predict"
+    className="mb-2 inline-flex w-fit items-center gap-1 justify-self-start text-sm font-medium text-gray-500 hover:text-gray-900"
+  >
+    <ArrowLeft className="h-4 w-4" />
+    Change meal
+  </Link>
+);
+
+const FoodLoader = () => (
+  <Card className="w-full max-w-lg shadow-md flex items-center justify-center min-h-[350px]">
+    <CardContent className="p-0">
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
+        <p className="text-base font-medium text-gray-500">
+          Checking today's prediction...
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const MealResultCard = ({ meal, count }) => {
+  const Icon = meal.icon;
+  return (
+    <Card className="w-full max-w-lg shadow-md">
+      <CardHeader className="text-center space-y-3">
+        <div className="text-left">
+          <BackButton />
+        </div>
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+          <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+        </div>
+        <CardTitle className="text-2xl font-bold">
+          Today's {meal.label} Prediction
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-8">
+          <Icon className="h-6 w-6 text-emerald-600" />
+          <span className="text-sm font-medium text-gray-500">
+            {meal.label}
+          </span>
+          <span className="text-5xl font-bold text-gray-900">{count}</span>
+          <span className="text-xs text-gray-500">students expected</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Reusable input form                                                       */
+/* -------------------------------------------------------------------------- */
+
+function MealCountForm({
+  onSubmit,
+  apiError,
+  submitLabel = "Predict Today's Count",
+  fields = ALL_FIELDS,
+}) {
+  const visibleMeals = MEAL_TYPES.filter((m) => fields.includes(m.key));
+
+  const schema = useMemo(
+    () => z.object(Object.fromEntries(fields.map((k) => [k, countField]))),
+    [fields.join(",")], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const { control, handleSubmit, formState } = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: { breakfast: "", lunch: "", snack: "", dinner: "" },
+    resolver: zodResolver(schema),
+    mode: "onTouched",
+    defaultValues: Object.fromEntries(fields.map((k) => [k, ""])),
   });
 
+  return (
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <FieldGroup className="gap-5">
+          {visibleMeals.map(({ key, label, icon: Icon }) => (
+            <Controller
+              key={key}
+              name={key}
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel
+                    htmlFor={key}
+                    className="flex items-center gap-2 text-base font-medium"
+                  >
+                    <Icon className="h-4 w-4 text-emerald-600" />
+                    {label}
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id={key}
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="e.g. 120"
+                    className="h-11 text-base"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          ))}
+
+          <Button
+            type="submit"
+            disabled={formState.isSubmitting}
+            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+            size="lg"
+          >
+            <Calculator className="w-4 h-4" />
+            {formState.isSubmitting ? "Predicting..." : submitLabel}
+          </Button>
+        </FieldGroup>
+      </form>
+
+      {apiError && (
+        <p className="text-sm text-red-500 mt-4 text-center">{apiError}</p>
+      )}
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Meal page: fetch today's prediction, show form or result                  */
+/* -------------------------------------------------------------------------- */
+
+function MealPage({ mealKey, todayEndpoint, predictEndpoint, fields }) {
+  const meal = getMeal(mealKey);
+
+  const [prediction, setPrediction] = useState(null);
+  const [apiError, setApiError] = useState(null);
+  const [checking, setChecking] = useState(true);
+
   useEffect(() => {
-    const checkTodaysPrediction = async () => {
+    const check = async () => {
       try {
-        const res = await api.get("/predict/today");
-        if (res.data.exists) setPredictions(res.data);
+        const res = await api.get(todayEndpoint);
+        if (res.data.exists) setPrediction(res.data);
       } catch (err) {
         console.error("Failed to check today's prediction", err);
       } finally {
-        setCheckingExisting(false);
+        setChecking(false);
       }
     };
-    checkTodaysPrediction();
-  }, []);
+    check();
+  }, [todayEndpoint]);
 
   const onSubmit = async (values) => {
     setApiError(null);
     try {
-      const res = await api.post("/predict", values);
-      if (res.data.error) {
-        setApiError(res.data.error);
-        return;
-      }
-      setPredictions(res.data);
+      console.log(values);
+      const res = await api.post(predictEndpoint, values);
+      if (res.data.error) return setApiError(res.data.error);
+      setPrediction(res.data);
     } catch (err) {
       setApiError(
         err.response?.data?.detail || "Something went wrong. Please try again.",
@@ -108,109 +251,58 @@ export default function StudentCount() {
     }
   };
 
+  if (checking)
+    return (
+      <PageShell>
+        <FoodLoader />
+      </PageShell>
+    );
+
+  if (prediction)
+    return (
+      <PageShell>
+        <MealResultCard meal={meal} count={prediction[meal.key]} />
+      </PageShell>
+    );
+
   return (
-    <div className="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center px-4 py-12">
-      {checkingExisting ? (
-        <Card className="w-full max-w-lg shadow-md flex items-center justify-center min-h-[350px]">
-          <CardContent className="p-0">
-            <FoodLoader />
-          </CardContent>
-        </Card>
-      ) : predictions ? (
-        <Card className="w-full max-w-lg shadow-md">
-          <CardHeader className="text-center space-y-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-              <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-            </div>
-            <CardTitle className="text-2xl font-bold">
-              Today's Prediction
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 max-sm:grid-cols-1 gap-3">
-              {MEAL_TYPES.map(({ key, label, icon: Icon }) => (
-                <div
-                  key={key}
-                  className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-6"
-                >
-                  <Icon className="h-5 w-5 text-emerald-600" />
-                  <span className="text-sm font-medium text-gray-500">
-                    {label}
-                  </span>
-                  <span className="text-2xl font-bold text-gray-900">
-                    {predictions[key]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="w-full max-w-lg shadow-md">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">
-              Yesterday's Headcount
-            </CardTitle>
-            <CardDescription>
-              Enter the actual consumption numbers from yesterday to generate
-              today's forecast.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <FieldGroup className="gap-5">
-                {MEAL_TYPES.map(({ key, label, icon: Icon }) => (
-                  <Controller
-                    key={key}
-                    name={key}
-                    control={control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel
-                          htmlFor={key}
-                          className="flex items-center gap-2 text-base font-medium"
-                        >
-                          <Icon className="h-4 w-4 text-emerald-600" />
-                          {label}
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id={key}
-                          type="number"
-                          placeholder="e.g. 120"
-                          className="h-11 text-base"
-                          aria-invalid={fieldState.invalid}
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )}
-                  />
-                ))}
-
-                <Button
-                  type="submit"
-                  disabled={formState.isSubmitting}
-                  className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
-                  size="lg"
-                >
-                  <Calculator className="w-4 h-4" />
-                  {formState.isSubmitting
-                    ? "Predicting..."
-                    : "Predict Today's Count"}
-                </Button>
-              </FieldGroup>
-            </form>
-
-            {apiError && (
-              <p className="text-sm text-red-500 mt-4 text-center">
-                {apiError}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+    <PageShell>
+      <Card className="w-full max-w-lg shadow-md">
+        <CardHeader>
+          <BackButton />
+          <CardTitle className="text-2xl font-bold">
+            Headcount for {
+              today
+            }
+          </CardTitle>
+          <CardDescription>
+            Enter the actual consumption numbers from yesterday to generate
+            today's {meal.label.toLowerCase()} forecast.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <MealCountForm
+            onSubmit={onSubmit}
+            apiError={apiError}
+            fields={fields}
+            submitLabel={`Predict ${meal.label} Count`}
+          />
+        </CardContent>
+      </Card>
+    </PageShell>
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  The single exported page                                                  */
+/* -------------------------------------------------------------------------- */
+
+export default function StudentCount() {
+  const { meal } = useParams();
+  const config = MEAL_CONFIG[meal];
+
+  if (!config) return <Navigate to="/predict" replace />;
+
+  // key={meal} resets all state when the user switches meals
+  return <MealPage key={meal} mealKey={meal} {...config} />;
 }

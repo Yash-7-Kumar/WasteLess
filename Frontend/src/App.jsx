@@ -4,6 +4,7 @@ import NavBar from "./otherComponents/navBar";
 import Home from "./otherComponents/Home";
 import StudentCount from "./otherComponents/StudentCount";
 import { Routes, Route } from "react-router-dom";
+import GetPredictionFor from "./otherComponents/GetPredictionfor";
 
 function App() {
   return (
@@ -11,7 +12,8 @@ function App() {
       <NavBar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/predict" element={<StudentCount />} />
+        <Route path="/predict" element={<GetPredictionFor />} />
+        <Route path="/predict/:meal" element={<StudentCount />} />
       </Routes>
     </div>
   );
