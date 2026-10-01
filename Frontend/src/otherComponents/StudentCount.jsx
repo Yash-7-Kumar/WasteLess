@@ -1,4 +1,3 @@
-// src/otherComponents/StudentCount.jsx
 import { useState, useEffect, useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
@@ -31,11 +30,15 @@ import {
 } from "@/components/ui/card";
 import api from "../urlServices.js";
 
-const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }); 
-
-/* -------------------------------------------------------------------------- */
-/*  Meal config                                                               */
-/* -------------------------------------------------------------------------- */
+const formatDate = (offsetDays = 0) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
 
 export const MEAL_TYPES = [
   { key: "breakfast", label: "Breakfast", icon: Coffee, hint: "Morning meal" },
@@ -48,17 +51,12 @@ export const getMeal = (key) => MEAL_TYPES.find((m) => m.key === key);
 
 const ALL_FIELDS = MEAL_TYPES.map((m) => m.key);
 
-// Edit endpoints / fields here when the backend changes
 const MEAL_CONFIG = {
   breakfast: { todayEndpoint: "/predict/breakfast/today", predictEndpoint: "/predict/breakfast", fields: ["breakfast"] },
   lunch:     { todayEndpoint: "/predict/lunch/today",     predictEndpoint: "/predict/lunch",     fields: ["lunch"] },
   snack:     { todayEndpoint: "/predict/snack/today",     predictEndpoint: "/predict/snack",     fields: ["snack"] },
   dinner:    { todayEndpoint: "/predict/dinner/today",    predictEndpoint: "/predict/dinner",    fields: ["dinner"] },
-};  
-
-/* -------------------------------------------------------------------------- */
-/*  Validation                                                                */
-/* -------------------------------------------------------------------------- */
+};
 
 const countField = z
   .string()
@@ -72,10 +70,6 @@ const countField = z
       .min(10, "Can't be less than 10")
       .max(12000, "That seems too high"),
   );
-
-/* -------------------------------------------------------------------------- */
-/*  Shared UI pieces                                                          */
-/* -------------------------------------------------------------------------- */
 
 const PageShell = ({ children }) => (
   <div className="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center px-4 py-12">
@@ -99,7 +93,7 @@ const FoodLoader = () => (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
         <p className="text-base font-medium text-gray-500">
-          Checking today's prediction...
+          Checking tomorrow's prediction...
         </p>
       </div>
     </CardContent>
@@ -118,7 +112,7 @@ const MealResultCard = ({ meal, count }) => {
           <CheckCircle2 className="h-6 w-6 text-emerald-600" />
         </div>
         <CardTitle className="text-2xl font-bold">
-          Today's {meal.label} Prediction
+          Tomorrow's {meal.label} Prediction
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -128,21 +122,19 @@ const MealResultCard = ({ meal, count }) => {
             {meal.label}
           </span>
           <span className="text-5xl font-bold text-gray-900">{count}</span>
-          <span className="text-xs text-gray-500">students expected</span>
+          <span className="text-xs text-gray-500">
+            students expected on {formatDate(1)}
+          </span>
         </div>
       </CardContent>
     </Card>
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*  Reusable input form                                                       */
-/* -------------------------------------------------------------------------- */
-
 function MealCountForm({
   onSubmit,
   apiError,
-  submitLabel = "Predict Today's Count",
+  submitLabel = "Predict Tomorrow's Count",
   fields = ALL_FIELDS,
 }) {
   const visibleMeals = MEAL_TYPES.filter((m) => fields.includes(m.key));
@@ -212,10 +204,6 @@ function MealCountForm({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Meal page: fetch today's prediction, show form or result                  */
-/* -------------------------------------------------------------------------- */
-
 function MealPage({ mealKey, todayEndpoint, predictEndpoint, fields }) {
   const meal = getMeal(mealKey);
 
@@ -229,7 +217,7 @@ function MealPage({ mealKey, todayEndpoint, predictEndpoint, fields }) {
         const res = await api.get(todayEndpoint);
         if (res.data.exists) setPrediction(res.data);
       } catch (err) {
-        console.error("Failed to check today's prediction", err);
+        console.error("Failed to check tomorrow's prediction", err);
       } finally {
         setChecking(false);
       }
@@ -240,7 +228,6 @@ function MealPage({ mealKey, todayEndpoint, predictEndpoint, fields }) {
   const onSubmit = async (values) => {
     setApiError(null);
     try {
-      console.log(values);
       const res = await api.post(predictEndpoint, values);
       if (res.data.error) return setApiError(res.data.error);
       setPrediction(res.data);
@@ -271,13 +258,11 @@ function MealPage({ mealKey, todayEndpoint, predictEndpoint, fields }) {
         <CardHeader>
           <BackButton />
           <CardTitle className="text-2xl font-bold">
-            Headcount for {
-              today
-            }
+            Headcount for {formatDate()}
           </CardTitle>
           <CardDescription>
-            Enter the actual consumption numbers from yesterday to generate
-            today's {meal.label.toLowerCase()} forecast.
+            Enter today's actual {meal.label.toLowerCase()} count to generate
+            tomorrow's forecast.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -293,16 +278,11 @@ function MealPage({ mealKey, todayEndpoint, predictEndpoint, fields }) {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  The single exported page                                                  */
-/* -------------------------------------------------------------------------- */
-
 export default function StudentCount() {
   const { meal } = useParams();
   const config = MEAL_CONFIG[meal];
 
   if (!config) return <Navigate to="/predict" replace />;
 
-  // key={meal} resets all state when the user switches meals
   return <MealPage key={meal} mealKey={meal} {...config} />;
 }

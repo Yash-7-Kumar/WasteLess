@@ -7,17 +7,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-
-import { Coffee, UtensilsCrossed, Cookie, Moon } from "lucide-react";
-
-const MEAL_TYPES = [
-  { key: "breakfast", label: "Breakfast", icon: Coffee, hint: "Morning meal" },
-  { key: "lunch", label: "Lunch", icon: UtensilsCrossed, hint: "Afternoon meal" },
-  { key: "snack", label: "Snack", icon: Cookie, hint: "Evening snacks" },
-  { key: "dinner", label: "Dinner", icon: Moon, hint: "Night meal" },
-];
-
-const getMeal = (key) => MEAL_TYPES.find((m) => m.key === key);
+import { MEAL_TYPES } from "./StudentCount";
 
 export default function MealSelect() {
   return (
@@ -28,7 +18,7 @@ export default function MealSelect() {
             Which meal do you need?
           </CardTitle>
           <CardDescription>
-            Select a meal to get today's predicted headcount.
+            Select a meal to get tomorrow's predicted headcount.
           </CardDescription>
         </CardHeader>
         <CardContent>

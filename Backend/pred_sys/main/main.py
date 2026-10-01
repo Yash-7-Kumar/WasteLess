@@ -1,5 +1,4 @@
 import pandas as pd
-from datetime import date
 from .feature_engineering import build_meal_features
 from .feature_engineering import get_model_feature_cols
 from .predicter import load_models
@@ -10,10 +9,7 @@ def predict_for(meal, df_master, target_date):
     target_date = pd.to_datetime(target_date)
 
     if target_date not in set(df_master["Date"]):
-        print(type(target_date))
-        print()
-        print(type(df_master))
-        return {"status": "blocked", "reason": f"no row for {target_date}"}
+        return {"status": "blocked", "reason": f"no row for {target_date.date()}"}
 
     cat = df_master.loc[df_master["Date"] == target_date, "Category"].iloc[0]
     if pd.isna(cat):
@@ -34,7 +30,7 @@ def predict_for(meal, df_master, target_date):
     ensemble = (xgb + lgbm + cb) / 3
 
     return {
-        "target_date": str(target_date.date()),
+        "target_date": target_date.date(),
         "meal": meal,
         "xgb": round(float(xgb), 1),
         "lgbm": round(float(lgbm), 1),
